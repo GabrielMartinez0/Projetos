@@ -1,0 +1,144 @@
+@page "/categoria"
+@using crudcomdb.Models
+@using crudcomdb.Interfaces
+@rendermode InteractiveServer
+
+@inject ICategoriaRepository _catRepo
+
+<h3>Categorias</h3>
+
+<button class="btn btn-primary"
+        @onclick="Incluir">
+        Nova Categoria
+</button>
+
+<div class="row">
+
+    <div class="col-md-4 mt-4">
+        <input type="text"
+               class="form-control"
+               placeholder="nome da categoria"
+               @bind="_categoria.Nome"
+               @ref="_nomeRef" />
+
+    </div>
+    
+    <div class="col-md-2 mt-4">
+        <button class="btn btn-warning"
+                @onclick="Salvar">
+            Salvar
+        </button>
+    </div>
+
+</div>
+
+<table class="table table-sm table-striped">
+    <thead>
+        <td>Id</td>
+        <td>Nome da Categoria</td>
+        <td>Ações</td>
+    </thead>
+    <tbody>
+
+        @foreach(var item in _ListagemCategorias)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Nome</td>
+                <td>
+                    <button class="btn btn-sm btn-primary"
+                            @onclick="() => Editar(item)">
+                        Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                            @onclick="() => Excluir(item)">
+                        Excluir
+                    </button>
+                </td>
+            </tr>
+        }
+       
+    </tbody>
+
+
+</table>
+
+<style>
+    .form-control{
+        margin-bottom:30px;
+        border:1px solid #000000;
+        border-radius: 5px; 
+    }
+
+</style>
+
+@code {
+
+    Categoria _categoria = new Categoria();
+    List<Categoria> _ListagemCategorias = new List<Categoria>();
+    ElementReference _nomeRef;
+    bool wp_incluir = false;
+
+    // método para inicializar a Listagem de categorias quando abrir a tela
+    protected override async Task OnInitializedAsync()
+    {
+        // carregamos todas as categoriias cadastradas no banco de dados
+        // através do método Listar() do repositório de categorias
+
+        _ListagemCategorias = await _catRepo.Listar();
+
+    }
+
+    // vamos criar o metodo para salvar os dados do formulario no banco de dados
+
+    private async Task Salvar(){
+        // vamos chamar o método Cadastrar() do repositório de categorias
+        // para salvar os dados do formulário no banco de dados
+
+        if(wp_incluir){
+            await _catRepo.Salvar(_categoria);
+        } else {
+            await _catRepo.Atualizar(_categoria);
+        }
+
+        // depois de salvar, vamos limpar o formulário
+        _categoria = new Categoria();
+
+        // e recarregar a listagem de categorias para mostrar a nova categoria cadastrada
+        _ListagemCategorias = await _catRepo.Listar();
+    }
+
+    // esse método é para preparar a tela para incluir uma nova categoria
+    // ele vai limpar o formulário e focar o campo de nome da categoria 
+    // para o usuário começar a digitar
+    private void Incluir(){
+        wp_incluir = true;
+        _nomeRef.FocusAsync();
+    }
+
+    // esse método é para preparar a tela para editar uma categoria existente
+    // reparem que ele recebe como parâmetro a categoria selecionada na listagem,
+    // e depois ele atribui essa categoria ao objeto _categoria,
+    // que é o objeto que está ligado ao formulário, ou seja, 
+    // os campos do formulário vão mostrar os dados dessa categoria selecionada
+
+    private async Task Editar(Categoria _categoriaSelecionada){
+        _categoria = _categoriaSelecionada;
+        wp_incluir = false;
+        await _nomeRef.FocusAsync();
+    }
+
+    // esse método é para excluir uma categoria, 
+    // ele recebe como parâmetro a categoria selecionada na listagem,
+    // e depois ele chama o método Deletar() do repositório de categorias 
+    //para excluir essa categoria do banco de dados
+
+    private async Task Excluir(Categoria _categoriaSelecionada){
+        await _catRepo.Deletar(_categoriaSelecionada.Id);
+        _ListagemCategorias = await _catRepo.Listar();
+    }
+
+
+
+    // fim da classe
+}

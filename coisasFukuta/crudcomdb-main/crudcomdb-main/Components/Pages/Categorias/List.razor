@@ -1,0 +1,121 @@
+@page "/categorias"
+@rendermode InteractiveServer
+@using crudcomdb.Interfaces
+@using crudcomdb.Models
+@inject ICategoriaRepository _catRepo
+
+<h3>Categorias</h3>
+
+<button class="btn btn-primary"
+        @onclick="Incluir">
+        Nova Categoria
+</button>
+
+<div class="row">
+
+    <div class="col-md-4">
+
+      <input type="text"
+               class="form-control"
+               placeholder="nome da categoria"
+               @bind="_categoria.Nome"
+               @ref="_nomeRef" />
+    
+    </div>
+  
+    <div class="col-md-2">
+        
+        <div class="col-md-2">
+                <button class="bg bg-warning"
+                        @onclick="Salvar">
+                    Salvar
+                </button>
+         </div>
+
+    </div>
+
+</div>
+
+<table class="table table-sm table-striped">
+    <thead>
+        <td>Id</td>
+        <td>Nome da Categoria</td>
+        <td>Ações</td>
+    </thead>
+   
+   <tbody>
+
+        @foreach(var item in _ListagemCategorias)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Nome</td>
+                <td>
+                   
+                    <button class="btn btn-sm btn-primary"
+                          @onclick="() => Editar(item)">
+                           Editar
+                    </button>
+
+                    <button class="btn btn-sm btn-danger">Excluir</button>
+                </td>
+            </tr>
+        }
+       
+    </tbody>
+
+
+</table>
+
+@code {
+
+Categoria _categoria = new Categoria();
+List<Categoria> _ListagemCategorias = new List<Categoria>();
+ElementReference _nomeRef;
+bool wp_incluir = false; 
+
+
+protected override async Task OnInitializedAsync()
+{
+        // carregamos todas as categoriias cadastradas no banco de dados
+        // através do método Listar() do repositório de categorias
+
+        _ListagemCategorias = await _catRepo.Listar();
+
+}
+
+
+private void Incluir(){
+        wp_incluir = true;   // diz ao software que vai ser inclusão
+        _nomeRef.FocusAsync();
+}
+
+ private async Task Salvar(){
+        // vamos chamar o método Cadastrar() do repositório de categorias
+        // para salvar os dados do formulário no banco de dados
+
+        if(wp_incluir){
+            await _catRepo.Salvar(_categoria);
+        } else {
+            await _catRepo.Atualizar(_categoria);
+        }
+
+        // depois de salvar, vamos limpar o formulário
+        _categoria = new Categoria();
+
+        // e recarregar a listagem de categorias para mostrar a nova categoria cadastrada
+        _ListagemCategorias = await _catRepo.Listar();
+    }
+
+
+private async Task Editar(Categoria _categoriaSelecionada)
+{
+        _categoria = _categoriaSelecionada;
+        wp_incluir = false;
+        await _nomeRef.FocusAsync();
+}
+
+
+
+    // fim da classe
+}

@@ -1,0 +1,75 @@
+@page "/produtos"
+@using crudcomdb.Models
+@rendermode InteractiveServer
+
+@inject IProdutoRepository _produtoRepo
+
+<h3>Produtos</h3>
+@* 1. Corrigido: Chamada do botão Novo *@
+<button class="btn btn-primary" @onclick="async () => await modalAddEdit.Abrir()">
+    Novo Produto
+</button>
+
+<table class="table table-sm table-striped">
+    <thead>
+        <td>Id</td>
+        <td>Nome do Produto</td>
+        <td>Referência</td>
+        <td>Unidade</td>
+        <td>Preço Venda</td>    
+        <td>Ações</td>
+    </thead>
+    <tbody>
+        @foreach (var item in _Listagem)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Descricao</td>
+                <td>@item.CodigoReferencia</td>
+                <td>@item.Unidade</td>
+                <td>@item.PrecoVenda.ToString("c2")</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" @onclick="async () => await modalAddEdit.Abrir(item)">
+                        Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger">Excluir</button>
+                </td>
+            </tr>
+        }
+        
+    </tbody>
+
+
+</table>
+
+@* 3. CRUCIAL: Você precisa declarar o componente aqui para o @ref funcionar *@
+<AddEdit @ref="modalAddEdit" OnProcessoConcluido="CarregarProdutos" />
+
+
+
+@code {
+
+    Produto produto = new Produto();
+    List<Produto> _Listagem = new List<Produto>();
+
+    // Referência para acessar os métodos do componente AddEdit
+    private AddEdit? modalAddEdit;        
+
+   private bool carregando = true;
+
+   protected override async Task OnInitializedAsync()
+    {
+        // Carrega os produtos de forma sequencial
+        await CarregarProdutos();
+    }
+
+    private async Task CarregarProdutos()
+    {
+        _Listagem = await _produtoRepo.Listar();
+        // Não é necessário StateHasChanged aqui se estiver dentro do OnInitializedAsync
+    }
+
+    
+
+    // fim da classe
+}

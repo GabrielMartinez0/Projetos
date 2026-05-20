@@ -1,0 +1,45 @@
+<div class="card @CorTexto @CorBackGround mb-3" style="max-width: 18rem">
+
+    <div class="card-header">@Titulo</div>
+
+    <div class="card-body">
+        <h5 class="card-title" style="font-size: 14px;">@Subtitulo</h5>
+        <p class="card-text" style="font-size: 12px;">@Descricao</p>
+    </div>
+
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        border: 2px solid #ccc;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+        }
+</style>
+
+@code {
+
+    [Parameter]
+    public string Titulo { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Subtitulo { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Descricao { get; set; } = string.Empty;
+
+    [Parameter]
+    public string CorBackGround { get; set; } = "bg-primary";
+    
+    [Parameter]
+    public string CorTexto { get; set; } = "text-white";
+
+    // bg-primary - azul
+    // bg-secondary - cinza
+    // bg-success - verde
+    // bg-danger - vermelho
+    // bg-warning - amarelo
+
+
+}

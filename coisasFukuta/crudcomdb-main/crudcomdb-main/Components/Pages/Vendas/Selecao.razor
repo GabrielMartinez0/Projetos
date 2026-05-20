@@ -1,0 +1,58 @@
+@page "/selecao"
+@rendermode InteractiveServer
+
+@inject ICategoriaRepository _catRepo
+
+
+<h3>Seleção de Vendas</h3>
+
+<InputSelect class="form-select" @bind-Value="selectedOption">
+    <option value="">Selecione...</option>
+    <option value="UN">Unidade</option>
+    <option value="PC">Peça</option>
+    <option value="CX">Caixa</option>
+    <option value="KG">Quilograma</option>
+</InputSelect>
+
+<div class="row">
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Categoria</label>
+        <InputSelect class="form-select" @bind-Value="CategoriaSelecionada">
+            <option value="">Selecione uma Categoria</option>
+            @foreach(var cat in _ListagemCategorias)
+            {
+                <option value="@cat.Id">@cat.Nome</option>
+            }
+        </InputSelect>
+    </div>
+</div>
+
+
+
+
+@code {
+    private string selectedOption = "";
+    private string CategoriaSelecionada = "";
+
+    private List<Categoria> _ListagemCategorias = new List<Categoria>();
+
+    protected override async Task OnInitializedAsync()
+    {
+       
+        await ListarDados();
+
+    }
+
+    private async Task ListarDados(){
+
+        var categorias = await _catRepo.Listar();
+
+        _ListagemCategorias = categorias .Where( x => !string.IsNullOrWhiteSpace(x.Nome))
+                                         .OrderBy( x => x.Nome)
+                                         .ToList();
+
+       
+    }
+
+
+}

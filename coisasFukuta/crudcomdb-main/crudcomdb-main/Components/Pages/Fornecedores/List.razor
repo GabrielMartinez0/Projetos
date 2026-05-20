@@ -1,0 +1,367 @@
+@page "/fornecedores"
+@using crudcomdb.Components.Pages.Componentes
+@rendermode InteractiveServer
+
+@inject IFornecedorRepository fornecedorRepo
+
+<TituloForm Titulo="Fornecedores" />
+
+@*
+// abaixo vamos inserir um botão para incluir um novo fornecedor
+// esse botão vai fucncionar da seguinte forma:
+// quando clicar ele vai chamar o método Incluir() dessa classe
+// esse método vai limpar o formulario e preparar o software para receber os dados
+*@
+
+<button class="btn btn-primary" @onclick="Incluir">Novo</button>
+
+@if(exibirFormulario) {
+
+<div class="formulario">
+<div class="row mt-3">
+
+    <div class="col-md-4">
+        <input type="text" class="form-control" placeholder="Nome"
+         @ref="_nomeRef" 
+         @bind="fornecedor.Nome" />
+    </div>
+
+    <div class="col-md-3">
+        
+       <input type="text" 
+            class="form-control" 
+            placeholder="00.000.000/0000-00"
+            value="@fornecedor.Cnpj" 
+            @oninput="OnCnpjInput" 
+            maxlength="18" />
+
+    
+    </div>
+
+    <div class="col-md-2">
+
+
+        <input type="text" 
+               class="form-control" 
+               placeholder="00000-000" 
+               value="@fornecedor.Cep"
+               maxlength="9"
+               @oninput="OnCepInput" 
+               />
+    
+    
+    </div>
+
+    <div class="col-md-3">
+        <input type="text" class="form-control" placeholder="Endereço" 
+               @bind="fornecedor.Endereco" />   
+    </div>
+
+</div>
+
+<div class="row mt-3">
+
+    <div class="col-md-4">
+        <input type="text" class="form-control" placeholder="Bairro" @bind="fornecedor.Bairro" />
+    </div>
+    <div class="col-md-4">
+        <input type="text" class="form-control" placeholder="Cidade" @bind="fornecedor.Cidade" />
+    </div>
+    <div class="col-md-1">
+        <input type="text" class="form-control" placeholder="UF" @bind="fornecedor.Estado" />
+    </div>
+    <div class="col-md-3">
+
+        <input type="text" 
+               class="form-control" 
+               placeholder="Telefone" 
+               value="@fornecedor.Telefone"
+               @oninput="OnTelefoneInput"
+               maxlength="15" 
+               />
+    
+    </div>
+
+</div>
+
+<div class="row mt-3">
+
+    <div class="col-md-2">
+        <button class="btn btn-success" @onclick="SalvarDados">Salvar</button>
+    </div>
+
+</div>
+
+@* abaixo vamos colocar a mensagem caso o nome não esteja preenchido se for clicado no botao salvar*@
+
+@if (mostrarMensagemErro) {
+    <div class="alert alert-danger mt-3">
+        O nome do fornecedor é obrigatório.
+    </div>
+}
+
+</div>  @* fim do formulario *@
+
+}
+
+
+
+<table class="table table-striped">
+
+    <thead>
+
+        <tr>
+            <th>Id</th>
+            <th>Nome</th>
+            <th>CNPJ</th>
+            <th>Ações</th>
+        </tr>
+
+    </thead>
+    <tbody>
+
+        @foreach (var item in fornecedores)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Nome</td>
+                <td>@item.Cnpj</td>
+                <td>
+                    <button class="btn btn-sm btn-warning"
+                            @onclick="() => Editar(item)">
+                            Alterar
+                    </button>
+
+                    <button class="btn btn-sm btn-danger"
+                            @onclick="() => Excluir(item.Id)">
+                        Excluir
+                    </button>
+
+
+
+
+                </td>
+            </tr>
+        }
+
+    </tbody>
+
+
+</table>
+
+
+<style>
+    h1 {
+        color: white;
+        font-size: 2.5em;
+        margin-bottom: 20px;
+        background-color: #800080;
+        padding: 10px;
+        border-radius: 10px;
+    }
+    .form-control {
+        border-radius: 10px;
+        border: 1px solid #aeabab;
+        padding: 10px;
+        font-size: 1em; }
+    .formulario{
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        border: 1px solid #aeabab;
+    }
+        
+</style>
+
+
+
+
+
+@code {
+
+    // declaraçao de variaveis
+    Fornecedor fornecedor = new Fornecedor();
+    List<Fornecedor> fornecedores = new List<Fornecedor>();
+    bool ehInclusao = true;
+    bool mostrarMensagemErro = false;
+    bool exibirFormulario = false;
+    
+     // vamos criar a variavel para dar o foco no campo nome
+    ElementReference _nomeRef;  // variavel de referencia
+
+
+    // que o metodo OnInitializedAsync seja executado quando o componente for inicializado
+    protected override async Task OnInitializedAsync()
+    {
+        fornecedores = await fornecedorRepo.Listar();
+    }
+
+
+    // metodo salvar
+    private async Task SalvarDados(){
+
+        if (ehInclusao)
+        {
+            if (string.IsNullOrEmpty(fornecedor.Nome))
+            {
+                // se o nome estiver vazio, não salva e exibe a mensagem de erro
+                mostrarMensagemErro = true;
+                StateHasChanged();  // atualiza a interface para exibir a mensagem de erro
+                return;
+            }
+            await fornecedorRepo.Incluir(fornecedor);  // metodo de inclusao
+        }
+        else
+        {
+            await fornecedorRepo.Atualizar(fornecedor);  // metodo de atualizaçao
+        }
+
+        fornecedores = await fornecedorRepo.Listar();
+        fornecedor = new Fornecedor();
+        ehInclusao = true;
+        mostrarMensagemErro = false;  // esconde a mensagem de erro depois de salvar
+        exibirFormulario=false;
+
+    }
+
+    private async Task Incluir(){
+        
+        mostrarMensagemErro = false;  // esconde a mensagem de erro quando clicar em incluir
+        
+        exibirFormulario = true;
+
+        await Task.Delay(100);
+
+        fornecedor = new Fornecedor();  // limpa o formulario porque objeto fica vazio
+
+        ehInclusao = true;  // diz ao software que é inclusão
+
+        // agora posso inserir o comando para dar o foco no campo nome
+        await _nomeRef.FocusAsync();  // comando para dar o foco no campo nome
+ 
+    }
+
+
+    private async Task Editar(Fornecedor _forn) {
+        exibirFormulario = true;  // exibe o formulario
+        await Task.Delay(100); // pequeno delay para garantir que o formulario esteja renderizado antes de tentar dar o foco
+        fornecedor = _forn;  // preenche o formulario com os dados do fornecedor selecionado
+        ehInclusao = false;  // diz ao software que é alteração
+        await _nomeRef.FocusAsync();  // comando para dar o foco no campo nome
+    }
+
+    private async Task Excluir(int id) {
+        await fornecedorRepo.Deletar(id);  // chama o método de exclusão do repositório
+        fornecedores = await fornecedorRepo.Listar();  // recarrega a lista de fornecedores
+    }
+
+
+    private void OnCnpjInput(ChangeEventArgs e)
+    {
+        // 1. Pega o valor bruto do input
+        string valorInput = e.Value?.ToString() ?? "";
+
+        // 2. Remove tudo que não for dígito
+        string apenasNumeros = new string(valorInput.Where(char.IsDigit).ToArray());
+
+        // 3. Limita a 14 dígitos (tamanho máximo do CNPJ)
+        if (apenasNumeros.Length > 14)
+            apenasNumeros = apenasNumeros.Substring(0, 14);
+
+        // 4. Aplica a máscara progressivamente
+        string resultado = apenasNumeros;
+
+        if (apenasNumeros.Length > 2)
+            resultado = resultado.Insert(2, ".");
+        
+        if (apenasNumeros.Length > 5)
+            resultado = resultado.Insert(6, ".");
+        
+        if (apenasNumeros.Length > 8)
+            resultado = resultado.Insert(10, "/");
+        
+        if (apenasNumeros.Length > 12)
+            resultado = resultado.Insert(15, "-");
+
+        // 5. Atualiza o modelo (isso refletirá no 'value' do input)
+        fornecedor.Cnpj = resultado;
+    }
+
+
+    private void OnCepInput(ChangeEventArgs e)
+    {
+        // 1. Pega o valor digitado
+        string valorInput = e.Value?.ToString() ?? "";
+
+        // 2. Mantém apenas números
+        string apenasNumeros = new string(valorInput.Where(char.IsDigit).ToArray());
+
+        // 3. Limita a 8 dígitos (tamanho padrão de CEP)
+        if (apenasNumeros.Length > 8)
+            apenasNumeros = apenasNumeros.Substring(0, 8);
+
+        // 4. Aplica a máscara: 00000-000
+        string resultado = apenasNumeros;
+
+        if (apenasNumeros.Length > 5)
+        {
+            resultado = resultado.Insert(5, "-");
+        }
+
+        // 5. Atualiza o objeto fornecedor
+        fornecedor.Cep = resultado;
+    }
+
+
+
+private void OnTelefoneInput(ChangeEventArgs e)
+{
+    string valorInput = e.Value?.ToString() ?? "";
+    string apenasNumeros = new string(valorInput.Where(char.IsDigit).ToArray());
+
+    // Limita ao máximo de 11 dígitos (DDD + 9 dígitos)
+    if (apenasNumeros.Length > 11)
+        apenasNumeros = apenasNumeros.Substring(0, 11);
+
+    string resultado = apenasNumeros;
+
+    // 1. Aplica o parênteses do DDD: (00
+    if (apenasNumeros.Length > 0)
+    {
+        resultado = "(" + apenasNumeros;
+    }
+
+    // 2. Fecha o parênteses: (00) 
+    if (apenasNumeros.Length > 2)
+    {
+        resultado = resultado.Insert(3, ") ");
+    }
+
+    // 3. Lógica do Hífen Dinâmico
+    if (apenasNumeros.Length > 2)
+    {
+        // Se tem até 10 dígitos (DDD + 8), é telefone FIXO: (00) 0000-0000
+        if (apenasNumeros.Length <= 10)
+        {
+            if (apenasNumeros.Length > 6)
+                resultado = resultado.Insert(9, "-");
+        }
+        // Se tem 11 dígitos (DDD + 9), é CELULAR: (00) 00000-0000
+        else
+        {
+            if (apenasNumeros.Length > 7)
+                resultado = resultado.Insert(10, "-");
+        }
+    }
+
+    fornecedor.Telefone = resultado;
+}
+
+
+
+
+// fim do code
+
+}
+

@@ -1,0 +1,248 @@
+criar a classe que representa nossa tabela de dados
+
+adicionar no AppDbContext  a model 
+
+rodar a migration com os seguintes comandos
+
+dotnet ef migrations add Tabela_Fornecedor
+
+de depois:
+
+dotnet ef database update 
+
+criar o repositorio
+
+criar a interface
+
+
+
+1º registrar a interface e o repositorio no << program.cs >>
+
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+
+-----------------------------------------------------------------------------------
+
+2. criar ou ir para a pagina de List da model
+
+----------------------------------------------------------------------
+
+
+2º injetar ICategoriaRepository e dar um nome a ela dentro do List.razor
+
+@inject ICategoriaRepository _catRepo
+
+-----------------------------------------------------------------------------------
+
+3º passo -> criar as variaveis de Listagem e de Controle dos Dados
+
+Categoria _categoria = new Categoria();
+
+List<Categoria> _ListagemCategorias = new List<Categoria>();
+
+-----------------------------------------------------------------------------------
+
+4º passo -> criar o metodo OnInitializedAsync()
+            para que no momento que abrir a tela ele carregar 
+            os dados das categorias cadastradas.
+
+    protected override async Task OnInitializedAsync()
+    {
+        // carregamos todas as categoriias cadastradas no banco de dados
+        // através do método Listar() do repositório de categorias
+
+        _ListagemCategorias = await _catRepo.Listar();
+
+    }
+
+-----------------------------------------------------------------------------------
+
+5º passo -> fazer os dados carregados na variavel _ListagemCategorias
+            aparecer na tabela, vamos mudar o tbody da nossa tabela
+
+    <tbody>
+
+        @foreach(var item in _ListagemCategorias)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Nome</td>
+                <td>
+                    <button class="btn btn-sm btn-primary">Editar</button>
+                    <button class="btn btn-sm btn-danger">Excluir</button>
+                </td>
+            </tr>
+        }
+       
+    </tbody>
+
+-----------------------------------------------------------------------------------
+6º passo
+
+    Vamos preparar o campo <<nome>> para bindar os dados e referenciar para poder
+    chamar o foco.
+
+    <input type="text"
+               class="form-control"
+               placeholder="nome da categoria"
+               @bind="_categoria.Nome"
+               @ref="_nomeRef" />
+
+-----------------------------------------------------------------------------------
+7º passo
+
+    Criar a variável para referenciar o campo nome
+    no @code vamos inserir
+
+    ElementReference _nomeRef;
+
+-----------------------------------------------------------------------------------
+8º passo
+
+    Criar o método que ao clicar no botão (Nova Categoria) ele vai dar o foco 
+    no nome permitindo automatizar a digitação'
+
+    logo abaixo do titulo de CATEGORIAS (H3)
+    TEMOS ESSE CODIGO:
+        <button class="btn btn-primary">Nova Categoria</button>
+
+    VAMOS TROCAR POR ESSE:
+
+    <button class="btn btn-primary"
+        @onclick="Incluir">
+        Nova Categoria
+    </button>
+
+    no @code
+
+    private void Incluir(){
+        wp_incluir = true;   // diz ao software que vai ser inclusão
+        _nomeRef.FocusAsync();
+    }
+
+-----------------------------------------------------------------------------------
+9º passo
+
+ vamos salvar os dados, precisamos de um metodo que ao clicar no botão salvar
+ ele seja executado, salvando os dados no banco de dados
+
+    private async Task Salvar(){
+        // vamos chamar o método Cadastrar() do repositório de categorias
+        // para salvar os dados do formulário no banco de dados
+
+        await _catRepo.Salvar(_categoria);
+
+        // depois de salvar, vamos limpar o formulário
+        _categoria = new Categoria();
+
+        // e recarregar a listagem de categorias para mostrar a nova categoria cadastrada
+        _ListagemCategorias = await _catRepo.Listar();
+    }
+
+
+-----------------------------------------------------------------------------------
+10º passo
+
+VAMOS TROCAR O BOTAO DE SALVAR POR ESSE 
+POIS ELE TEM O @ONCLICK QUE VAI CHAMAR O metodo
+
+    <div class="col-md-2">
+        <button class="bg bg-warning"
+                @onclick="Salvar">
+            Salvar
+        </button>
+    </div>
+
+-----------------------------------------------------------------------------------
+11º passo
+
+VAMOS CRIAR A VARIAVEL QUE VAI CONTROLAR NOSSA AÇÃO
+SE VAI INCLUIR OU ALTERAR
+
+bool wp_incluir = false;
+
+-----------------------------------------------------------------------------------
+12º passo
+
+VAMOS CRIAR O METODO QUE VAI DIZER AO SOFTWARE QUE AGORA VAMOS REALIZAR UMA ALTERAÇÃO
+temos o parametro que recebe os dados da listagem 
+e passamos para o formulario
+
+    private async Task Editar(Categoria _categoriaSelecionada){
+        _categoria = _categoriaSelecionada;
+        wp_incluir = false;
+        await _nomeRef.FocusAsync();
+    }
+
+
+13º passo
+-----------------------------------------------------------------------------------
+VAMOS ALTERAR O BOTAO DO EDITAR PARA CHAMAR CORRETAMENTE
+--> MOSTRAR O FOREACH (DE ONDE VEM O item)
+
+    <button class="btn btn-sm btn-primary"
+            @onclick="() => Editar(item)">
+            Editar
+    </button>
+
+
+-----------------------------------------------------------------------------------
+14º passo
+
+    vamos melhorar o metodo de salvar para agora saber
+    se é inclusao ou alteração
+
+    private async Task Salvar(){
+        // vamos chamar o método Cadastrar() do repositório de categorias
+        // para salvar os dados do formulário no banco de dados
+
+        if(wp_incluir){
+            await _catRepo.Salvar(_categoria);
+        } else {
+            await _catRepo.Atualizar(_categoria);
+        }
+
+        // depois de salvar, vamos limpar o formulário
+        _categoria = new Categoria();
+
+        // e recarregar a listagem de categorias para mostrar a nova categoria cadastrada
+        _ListagemCategorias = await _catRepo.Listar();
+    }
+
+
+-----------------------------------------------------------------------------------
+15º passo
+
+vamos a exclusao, entao precisamos criar o metodo que vai Excluir
+reparem que ele tem o parametro que vem da listagem
+
+    private async Task Excluir(Categoria _categoriaSelecionada){
+        await _catRepo.Deletar(_categoriaSelecionada.Id);
+        _ListagemCategorias = await _catRepo.Listar();
+    }
+
+
+-----------------------------------------------------------------------------------
+16º passo
+
+chamar o método de Excluir através do botão
+substitua o botao existente por esse abaixo
+o que ele tem de diferente ? somente o @onclick para chamar o metodo.
+
+                    <button class="btn btn-sm btn-danger"
+                            @onclick="() => Excluir(item)">
+                        Excluir
+                    </button>
+
+
+-----------------------------------------------------------------------------------
+17º passo
+VAMOS COLOCAR UM STYLE PARA DEIXAR MAIS BONITA NOSSA tela
+
+<style>
+    .form-control{
+        margin-bottom:30px;
+        border:1px solid #000000;
+        border-radius: 5px; 
+    }
+
+</style>

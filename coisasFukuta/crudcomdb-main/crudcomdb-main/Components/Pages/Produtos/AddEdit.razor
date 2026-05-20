@@ -1,0 +1,175 @@
+@using crudcomdb.Models
+@using crudcomdb.Interfaces
+@inject IProdutoRepository _produtoRepo
+@inject ICategoriaRepository _categoriaRepo 
+
+@if (ShowModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5); overflow-y: auto;">
+        <div class="modal-dialog modal-lg shadow-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi @(Model.Id == 0 ? "bi-plus-circle" : "bi-pencil-square")"></i>
+                        @(Model.Id == 0 ? "Cadastrar Novo Produto" : $"Editando: {Model.Descricao}")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="Fechar"></button>
+                </div>
+
+                <EditForm Model="Model" OnValidSubmit="Salvar">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            @* --- Informações Básicas --- *@
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Descrição</label>
+                                <InputText class="form-control" @bind-Value="Model.Descricao" placeholder="Ex: Monitor Gamer 24p" />
+                                <ValidationMessage For="@(() => Model.Descricao)" />
+                            </div>
+                           <div class="col-md-4">
+                                <label class="form-label fw-bold">Unidade</label>
+                                <InputSelect class="form-select" @bind-Value="Model.Unidade">
+                                    <option value="">Selecione...</option>
+                                    <option value="UN">UN - Unidade</option>
+                                    <option value="PC">PC - Peça</option>
+                                    <option value="CX">CX - Caixa</option>
+                                    <option value="KG">KG - Quilograma</option>
+                                    <option value="GR">GR - Grama</option>
+                                    <option value="LT">LT - Litro</option>
+                                    <option value="TO">TO - Tonelada</option>
+                                </InputSelect>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Cód. Referência</label>
+                                <InputText class="form-control" @bind-Value="Model.CodigoReferencia" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Código de Barras</label>
+                                <InputText class="form-control" @bind-Value="Model.CodeBar" />
+                            </div>
+
+                            @* --- Financeiro --- *@
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Preço Custo</label>
+                                <InputNumber class="form-control" @bind-Value="Model.PrecoCusto" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Margem (%)</label>
+                                <InputNumber class="form-control" @bind-Value="Model.MargemLucro" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Preço Venda</label>
+                                <InputNumber class="form-control" @bind-Value="Model.PrecoVenda" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Desc. Máx (%)</label>
+                                <InputNumber class="form-control" @bind-Value="Model.DescontoMaximo" />
+                            </div>
+
+                            @* --- Estoque --- *@
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Estoque Atual</label>
+                                <InputNumber class="form-control" @bind-Value="Model.EstoqueAtual" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Esq. Mínimo</label>
+                                <InputNumber class="form-control" @bind-Value="Model.EstoqueMinimo" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Esq. Máximo</label>
+                                <InputNumber class="form-control" @bind-Value="Model.EstoqueMaximo" />
+                            </div>
+
+                            @* --- Categoria --- *@
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Categoria</label>
+                                <InputSelect class="form-select" @bind-Value="Model.CategoriaId">
+                                    <option value="0">Selecione uma categoria...</option>
+                                    @foreach (var cat in Categorias)
+                                    {
+                                        <option value="@cat.Id">@cat.Nome</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" @onclick="Fechar">Cancelar</button>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="bi bi-save"></i> Salvar
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+var categorias = await _catRepo.Listar();
+_ListagemCategorias = categorias.OrderBy(c => c.Nome).ToList();
+
+
+_ListagemCategorias = categorias
+    .Where(x => !string.IsNullOrWhiteSpace(x.Nome)) // Filtra (remove os brancos)
+    .OrderBy(x => x.Nome)                          // Ordena
+    .ToList();
+
+
+@code {
+    [Parameter] public EventCallback OnProcessoConcluido { get; set; }
+
+    private bool ShowModal { get; set; } = false;
+    private Produto Model { get; set; } = new();
+    private List<Categoria> Categorias { get; set; } = new();
+
+    // REMOVA O ONINITIALIZEDASYNC DAQUI!
+
+    public async Task Abrir(Produto? produtoParaEditar = null)
+    {
+        // 1. Carrega as categorias apenas quando o botão for clicado
+        // Isso garante que a listagem principal já terminou de usar o banco.
+        Categorias = await _categoriaRepo.Listar();
+
+        if (produtoParaEditar != null)
+        {
+           
+            Model = new Produto {
+                Id = produtoParaEditar.Id,
+                Descricao = produtoParaEditar.Descricao,
+                Unidade = produtoParaEditar.Unidade,
+                PrecoVenda = produtoParaEditar.PrecoVenda,
+                CodigoReferencia = produtoParaEditar.CodigoReferencia,
+                CodeBar = produtoParaEditar.CodeBar,
+                PrecoCusto = produtoParaEditar.PrecoCusto,
+                MargemLucro = produtoParaEditar.MargemLucro,
+                DescontoMaximo = produtoParaEditar.DescontoMaximo,
+                EstoqueAtual = produtoParaEditar.EstoqueAtual,
+                EstoqueMinimo = produtoParaEditar.EstoqueMinimo,
+                EstoqueMaximo = produtoParaEditar.EstoqueMaximo,
+                CategoriaId = produtoParaEditar.CategoriaId
+            };
+        }
+        else
+        {
+            Model = new Produto();
+        }
+        
+        ShowModal = true;
+        StateHasChanged();
+    }
+
+    public void Fechar() => ShowModal = false;
+
+    private async Task Salvar()
+    {
+        if (Model.Id == 0)
+            await _produtoRepo.Salvar(Model);
+        else
+            await _produtoRepo.Atualizar(Model);
+
+        ShowModal = false;
+        await OnProcessoConcluido.InvokeAsync();
+    }
+}

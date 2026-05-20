@@ -1,0 +1,19 @@
+<h3 class="titulo">@Titulo</h3>
+
+<style>
+    .titulo {
+        color: white;
+        margin-bottom: 20px;
+        background: linear-gradient(#800080, #370e55);
+        padding: 10px;
+        border-radius: 10px;
+        box-shadow: 5px 8px 10px rgba(12, 0, 0, 0.4);
+        transition: transform 0.2s;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string Titulo { get; set; } = "";
+
+}
